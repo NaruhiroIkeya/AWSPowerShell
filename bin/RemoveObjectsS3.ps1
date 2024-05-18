@@ -9,13 +9,13 @@
 ## @version:1.0
 ## @see:
 ## @parameter
-##  1:ãƒã‚±ãƒƒãƒˆå
+##  1:ƒoƒPƒbƒg–¼
 ##
-## @return:0:Success 9:ã‚¨ãƒ©ãƒ¼çµ‚äº† / 99:Exception
+## @return:0:Success 9:ƒGƒ‰[I—¹ / 99:Exception
 ################################################################################>
 
 ##########################
-## ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿è¨­å®š
+## ƒpƒ‰ƒ[ƒ^İ’è
 ##########################
 param (
   [parameter(mandatory=$true)][string]$BucketName,
@@ -27,25 +27,25 @@ param (
 )
 
 ##########################
-## ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®ãƒ­ãƒ¼ãƒ‰
+## ƒ‚ƒWƒ…[ƒ‹‚Ìƒ[ƒh
 ##########################
 . .\LogController.ps1
 . .\AWSLogonFunction.ps1
 
 ##########################
-# å›ºå®šå€¤ 
+# ŒÅ’è’l 
 ##########################
-[string]$CredenticialFile = "AzureCredential_Secure.xml"
+[string]$CredenticialFile = "AWSCredential_Secure.xml"
 [bool]$ErrorFlg = $false
 $ErrorActionPreference = "Stop"
 
 ##########################
-## è­¦å‘Šã®è¡¨ç¤ºæŠ‘æ­¢
+## Œx‚Ì•\¦—}~
 ##########################
 ## Set-Item Env:\SuppressAzurePowerShellBreakingChangeWarnings "true"
 
 ###############################
-# LogController ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç”Ÿæˆ
+# LogController ƒIƒuƒWƒFƒNƒg¶¬
 ###############################
 if($Stdout -and $Eventlog) {
   $Log = New-Object LogController($true, (Get-ChildItem $MyInvocation.MyCommand.Path).Name)
@@ -61,28 +61,24 @@ if($Stdout -and $Eventlog) {
   $LogFileName = $LogBaseName + ".log"
   $Log = New-Object LogController($($LogFilePath + "\" + $LogFileName), $false, $true, $LogBaseName, $false)
   $Log.DeleteLog($SaveDays)
-  $Log.Info("ãƒ­ã‚°ãƒ•ã‚¡ã‚¤ãƒ«å:$($Log.GetLogInfo())")
+  $Log.Info("ƒƒOƒtƒ@ƒCƒ‹–¼:$($Log.GetLogInfo())")
 }
 
 ##########################
-# ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ãƒã‚§ãƒƒã‚¯
+# ƒpƒ‰ƒ[ƒ^ƒ`ƒFƒbƒN
 ##########################
 if($Term -le 0) {
-  $Log.Info("ä¿æŒæ—¥æ•°ã¯1ä»¥ä¸Šã‚’è¨­å®šã—ã¦ãã ã•ã„ã€‚")
+  $Log.Info("•Û“ú”‚Í1ˆÈã‚ğİ’è‚µ‚Ä‚­‚¾‚³‚¢B")
   exit 1
 }
 
-if(-not $RegionName) {
-  $RegionName = Get-DefaultAWSRegion
-}
-<#
 try {
   ##########################
-  # AWSãƒ­ã‚°ã‚ªãƒ³å‡¦ç†
+  # AWSƒƒOƒIƒ“ˆ—
   ##########################
   $CredenticialFilePath = Split-Path $MyInvocation.MyCommand.Path -Parent | Split-Path -Parent | Join-Path -ChildPath etc -Resolve
-  $CredenticialFileFullPath = "$CredenticialFilePath)\$($CredenticialFile)" 
-  $Connect = New-Object AzureLogonFunction($CredenticialFileFullPath)
+  $CredenticialFileFullPath = $CredenticialFilePath + "\" + $CredenticialFile
+  $Connect = New-Object AWSLogonFunction($CredenticialFileFullPath)
   if($Connect.Initialize($Log)) {
     if(-not $Connect.Logon()) {
       exit 9
@@ -90,22 +86,26 @@ try {
   } else {
     exit 9
   }
+  if(-not $RegionName) {
+   $RegionName = Get-DefaultAWSRegion
+  }
+  $Log.Info("AWS Region: $RegionName")
 
   $S3Bucket = Get-S3Bucket -BucketName $BucketName -Region $RegionName
   if ($S3Bucket) {
-    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object {$_.LastModified -gt  ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd hh:mm:ss")}
+    $Log.Info("Get-S3Object -BucketName $($S3Bucket.BucketName) -KeyPrefix $KeyPrefix `| Where-Object {`$`_.LastModified -gt  ((get-Date).AddDays(-1 * $Term)).ToString(""yyyy/MM/dd hh:mm:ss"")}")
+    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object {$_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd hh:mm:ss")}
     foreach ($Obj in $S3Objects) {
-      $Log.Info("$Obj ã‚’å‰Šé™¤ã—ã¾ã™ã€‚")
+      $Log.Info("$($Obj.Key) ‚ğíœ‚µ‚Ü‚·B")
       Remove-S3Object -BucketName $BacketName -Key $Obj.Key -Force
     } 
   } else {
-    $Log.Error("S3ãƒã‚±ãƒƒãƒˆãŒå­˜åœ¨ã—ã¾ã›ã‚“ã€‚")
+    $Log.Error("S3ƒoƒPƒbƒg‚ª‘¶İ‚µ‚Ü‚¹‚ñB")
     exit 1
   }
 } catch {
-  $this.Log.Error("å‡¦ç†ä¸­ã«ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸã€‚")
+  $this.Log.Error("ˆ—’†‚ÉƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½B")
   $this.Log.Error($_.Exception)
   exit 1
 }
-#>
 exit 0

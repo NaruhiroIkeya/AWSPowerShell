@@ -75,9 +75,13 @@ Class AWSLogonFunction {
             ##########################
             # Invoke Set-AWSCredential first
             $this.Log.Info("Invoke Set-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.ProfileName)")
-            Set-AWSCredential -ProfileName $this.ConfigInfo.Configuration.ProfileName -Scope Global
-            Set-DefaultAWSRegion -Region $this.ConfigInfo.Configuration.Region -Scope Global
+            $Credential = Get-AWSCredential -ListProfileDetail | Where-Object { $_.ProfileName -eq $this.ConfigInfo.Configuration.ProfileName} 
+            $this.Log.Info("Profile Name: $($Credential.ProfileName)")
+            Set-AWSCredential -ProfileName $Credential.ProfileName
+            $Region = Get-DefaultAWSRegion
+            $this.Log.Info("Default Region: $Region")
           }
+
           default {
             $this.Log.error("AWSへログイン:失敗:認証方式設定不備")
             return $false 
@@ -97,8 +101,8 @@ Class AWSLogonFunction {
     try {
       if (-not $this.Log) { if (-not $this.Initialize()) {return $false} }
       $this.Log.Info("Set-AWSCredential -AccessKey $($this.ConfigInfo.Configuration.AccessKey) -SecretKey $($this.ConfigInfo.Configuration.SecretKey) -StoreAs $($this.ConfigInfo.Configuration.StoreAs)")
-      $this.Log.Info("Initialize-AWSDefaultConfiguration -ProfileName $($this.ConfigInfo.Configuration.StoreAs) -Region $($this.ConfigInfo.Configuration.Region)")
       $this.Log.Info("Get-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.StoreAs)")
+##      $this.Log.Info("Initialize-AWSDefaultConfiguration -ProfileName $($this.ConfigInfo.Configuration.StoreAs) -Region $($this.ConfigInfo.Configuration.Region)")
       $Credential = Get-AWSCredential -ProfileName $this.ConfigInfo.Configuration.StoreAs
       if (-not $Credential) {
         Set-AWSCredential -AccessKey $this.ConfigInfo.Configuration.AccessKey -SecretKey $this.ConfigInfo.Configuration.SecretKey -StoreAs $this.ConfigInfo.Configuration.StoreAs
