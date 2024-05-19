@@ -133,9 +133,14 @@ try {
     if($Instance.State.Name -eq "stopped") { 
       $Log.Info("EC2を起動します。")
       $Result = Start-EC2Instance -InstanceId $Instance.InstanceId
-      while ((Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value -ne "running") {
-        Write-Verbose "Waiting for our instance to reach the state of running..."
-        Start-Sleep -Seconds $RetryInterval
+      if($Result) {
+        while ((Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value -ne "running") {
+          $Log.Info("Waiting for our instance to reach the state of running...")
+          Start-Sleep -Seconds $RetryInterval
+        }
+      } else {
+        $Log.Info("EC2起動ジョブ実行に失敗しました。")
+        exit 9
       }
       $Log.Info("EC2起動ジョブが完了しました。")
     } else {
@@ -149,9 +154,14 @@ try {
     if($Instance.State.Name -eq "running") { 
       $Log.Info("EC2を停止します。")
       $Result = Stop-EC2Instance -InstanceId $Instance.InstanceId
-      while ((Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value -ne "stopped") {
-        Write-Verbose "Waiting for our instance to reach the state of stopped..."
-        Start-Sleep -Seconds $RetryInterval
+      if($Result) {
+        while ((Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value -ne "stopped") {
+          $Log.Info("Waiting for our instance to reach the state of stopped...")
+          Start-Sleep -Seconds $RetryInterval
+        }
+      } else {
+        $Log.Info("EC2停止ジョブ実行に失敗しました。")
+        exit 9
       }
       $Log.Info("EC2停止ジョブが完了しました。")
     } else {
