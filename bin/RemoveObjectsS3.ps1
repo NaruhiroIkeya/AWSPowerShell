@@ -10,6 +10,11 @@
 ## @see:
 ## @parameter
 ##  1:バケット名
+##  2:KeyPrefix
+##  3:保持期間
+##  4:リージョン名
+##  5:イベントログ出力
+##  6:標準出力
 ##
 ## @return:0:Success 9:エラー終了 / 99:Exception
 ################################################################################>
@@ -37,6 +42,7 @@ param (
 ##########################
 [string]$CredenticialFile = "AWSCredential_Secure.xml"
 [bool]$ErrorFlg = $false
+[int]$SaveDays = 7
 $ErrorActionPreference = "Stop"
 
 ##########################

@@ -74,12 +74,16 @@ Class AWSLogonFunction {
             # AWSÇ÷ÇÃÉçÉOÉCÉì(IAMUser)
             ##########################
             # Invoke Set-AWSCredential first
-            $this.Log.Info("Invoke Set-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.ProfileName)")
+            $this.Log.Info("Set-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.ProfileName)")
             $Credential = Get-AWSCredential -ListProfileDetail | Where-Object { $_.ProfileName -eq $this.ConfigInfo.Configuration.ProfileName} 
             $this.Log.Info("Profile Name: $($Credential.ProfileName)")
-            Set-AWSCredential -ProfileName $Credential.ProfileName
+            Set-AWSCredential -ProfileName $Credential.ProfileName -Scope Global
             $Region = Get-DefaultAWSRegion
-            $this.Log.Info("Default Region: $Region")
+            if(-not $Region) {
+              $Region = Set-DefaultAWSRegion -Region $this.ConfigInfo.Configuration.Region -Scope Global
+              $Region = Get-DefaultAWSRegion
+            }
+            $this.Log.Info("Default Region: $($Region.Name)")
           }
 
           default {
