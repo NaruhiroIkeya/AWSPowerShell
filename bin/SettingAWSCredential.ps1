@@ -5,13 +5,13 @@
 ## @name:ConvertSecretKey2SecureString.ps1
 ## @summary:Convert Service Principal Secret Key to SecureString
 ##
-## @since:2020/05/01
+## @since:2024/05/18
 ## @version:1.0
 ## @see:
 ## @parameter
 ##  1:標準出力
 ##
-## @return:0:Success 1:パラメータエラー 2:Az command実行エラー 9:Exception
+## @return:0:Success 1:パラメータエラー 2:command実行エラー 9:Exception
 ################################################################################>
 
 ##########################

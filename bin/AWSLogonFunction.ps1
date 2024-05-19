@@ -1,5 +1,5 @@
 <################################################################################
-## Copyright(c) 2020 BeeX Inc. All rights reserved.
+## Copyright(c) 2024 BeeX Inc. All rights reserved.
 ## @auther#Naruhiro Ikeya
 ##
 ## @name:AWSLogonFunction.ps1
