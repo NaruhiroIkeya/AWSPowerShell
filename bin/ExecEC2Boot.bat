@@ -30,7 +30,7 @@ SET __ERROR_CODE__=-1
 SET __ARGC__=0
 FOR %%a IN ( %* ) DO SET /A __ARGC__+=1
 
-IF %__ARGC__% leq 1 (
+IF %__ARGC__% lss 1 (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
   ECHO [%DATE% !__TIME__!] Usage:%~n0 EC2–¼ [Region–¼]
