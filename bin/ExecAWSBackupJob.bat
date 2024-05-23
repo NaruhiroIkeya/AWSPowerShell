@@ -1,17 +1,19 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: Copyright(c) 2020 BeeX Inc. All rights reserved.
+:: Copyright(c) 2024 BeeX Inc. All rights reserved.
 :: @auther:Naruhiro Ikeya
 ::
 :: @name:ExecAzureBackupJob.bat
 :: @summary:ExecAzureBackupJob.ps1 Wrapper
 ::
-:: @since:2019/01/28
+:: @since:20i24/05/23
 :: @version:1.0
 :: @see:
 :: @parameter
-::  1:AzureVM名
-::  2:Recovery Serviceコンテナー名
-::  3:Azure Backupジョブポーリング間隔（秒）
+::  1:AWSVM名
+::  2:Vault名
+::  3:バックアップ保管日数
+::  4:AWS Backup バックアップウインドウ
+::  5:リターンステータス（スナップショット待ち、完了待ち）
 ::
 :: @return:0:Success 1:パラメータエラー 99:異常終了
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -33,14 +35,14 @@ FOR %%a IN ( %* ) DO SET /A __ARGC__+=1
 IF %__ARGC__% neq 4 (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
-  ECHO [%DATE% !__TIME__!] Usage:%~nx0 AzureVM名 RecoveryServiceコンテナー名 バックアップ保持日数 Backupジョブポーリング間隔 
+  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow
   EXIT /B 1
 ) 
 
 SET __VMNAME__=%1
-SET __R_S_CONTAINER__=%2
-SET /A __ADD_DAYS__=%3
-SET /A __JOB_TIMEOUT__=%4
+SET __VAULTNAME__=%2
+SET /A __CYCLEDAYS__=%3
+SET /A __BACKUPWINDOW__=%4
 
 ::::::::::::::::::::::::::::::::::
 ::      タイムスタンプ生成      ::
@@ -83,7 +85,7 @@ if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
     set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__R_S_CONTAINER__% %__ADD_DAYS__% %__JOB_TIMEOUT__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__BACKUPWINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 
 ::::::::::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行結果確認      ::
