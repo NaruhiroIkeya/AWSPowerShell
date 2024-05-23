@@ -12,8 +12,8 @@
 ::  1:AWSVM名
 ::  2:Vault名
 ::  3:バックアップ保管日数
-::  4:AWS Backup バックアップウインドウ
-::  5:リターンステータス（スナップショット待ち、完了待ち）
+::  4:AWS Backup バックアップウインドウ(開始)
+::  5:AWS Backup バックアップウインドウ(完了)
 ::
 :: @return:0:Success 1:パラメータエラー 99:異常終了
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -32,7 +32,7 @@ SET __EXPIRE_DAYS__=7
 SET __ARGC__=0
 FOR %%a IN ( %* ) DO SET /A __ARGC__+=1
 
-IF %__ARGC__% neq 4 (
+IF %__ARGC__% neq 5 (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
   ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow
@@ -42,7 +42,8 @@ IF %__ARGC__% neq 4 (
 SET __VMNAME__=%1
 SET __VAULTNAME__=%2
 SET /A __CYCLEDAYS__=%3
-SET /A __BACKUPWINDOW__=%4
+SET /A __START_WINDOW__=%4
+SET /A __COMPLETE_WINDOW__=%5
 
 ::::::::::::::::::::::::::::::::::
 ::      タイムスタンプ生成      ::
@@ -85,7 +86,7 @@ if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
     set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__BACKUPWINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__START_WINDOW__% %__COMPLETE_WINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 
 ::::::::::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行結果確認      ::
