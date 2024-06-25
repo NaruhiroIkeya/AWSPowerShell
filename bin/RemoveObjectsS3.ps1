@@ -99,11 +99,11 @@ try {
 
   $S3Bucket = Get-S3Bucket -BucketName $BucketName -Region $RegionName
   if ($S3Bucket) {
-    $Log.Info("Get-S3Object -BucketName $($S3Bucket.BucketName) -KeyPrefix $KeyPrefix `| Where-Object {`$`_.LastModified -gt  ((get-Date).AddDays(-1 * $Term)).ToString(""yyyy/MM/dd hh:mm:ss"")}")
-    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object {$_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd hh:mm:ss")}
+    $Log.Info("Get-S3Object -BucketName $($S3Bucket.BucketName) -KeyPrefix $KeyPrefix `| Where-Object {`$`_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString(""yyyy/MM/dd hh:mm:ss"") -and `$`_.Key.LastIndexOf(""/"") -ne `$(`$`_.Key.Length -1)}")
+    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object {$_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd hh:mm:ss") -and $_.Key.LastIndexOf("/") -ne $($_.Key.Length -1)}
     foreach ($Obj in $S3Objects) {
       $Log.Info("$($Obj.Key) を削除します。")
-      Remove-S3Object -BucketName $BacketName -Key $Obj.Key -Force
+      Remove-S3Object -BucketName $BucketName -Key $Obj.Key -Force
     } 
   } else {
     $Log.Error("S3バケットが存在しません。")
