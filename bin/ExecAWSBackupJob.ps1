@@ -1,5 +1,5 @@
 <################################################################################
-## Copyright(c) 2020 BeeX Inc. All rights reserved.
+## Copyright(c) 2024 BeeX Inc. All rights reserved.
 ## @auther#Naruhiro Ikeya
 ##
 ## @name:ExecAWSBackupJob.ps1
@@ -41,7 +41,7 @@ param (
 ##########################
 # モジュールのロード
 ##########################
-Import-Module AWS.Tools.EC2
+##Import-Module AWS.Tools.EC2
 . .\LogController.ps1
 . .\AWSLogonFunction.ps1
 

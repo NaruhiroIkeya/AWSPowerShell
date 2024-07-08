@@ -35,7 +35,7 @@ FOR %%a IN ( %* ) DO SET /A __ARGC__+=1
 IF %__ARGC__% neq 5 (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
-  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow
+  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow[Start] BackupWindow[End]
   EXIT /B 1
 ) 
 

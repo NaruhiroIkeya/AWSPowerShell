@@ -109,7 +109,8 @@ Class AWSLogonFunction {
 ##      $this.Log.Info("Initialize-AWSDefaultConfiguration -ProfileName $($this.ConfigInfo.Configuration.StoreAs) -Region $($this.ConfigInfo.Configuration.Region)")
       $Credential = Get-AWSCredential -ProfileName $this.ConfigInfo.Configuration.StoreAs
       if (-not $Credential) {
-        Set-AWSCredential -AccessKey $this.ConfigInfo.Configuration.AccessKey -SecretKey $this.ConfigInfo.Configuration.SecretKey -StoreAs $this.ConfigInfo.Configuration.StoreAs
+        $CredenticialFile = Join-Path -Path "$env:USERPROFILE" -ChildPath ".aws" | Join-Path -ChildPath  "credentials"
+        Set-AWSCredential -AccessKey $this.ConfigInfo.Configuration.AccessKey -SecretKey $this.ConfigInfo.Configuration.SecretKey -StoreAs $this.ConfigInfo.Configuration.StoreAs -ProfileLocation $CredenticialFile
         $this.Log.Info("$($this.ConfigInfo.Configuration.StoreAs)Çìoò^ÇµÇ‹ÇµÇΩÅB")
       } else {
         $this.Log.Info("$($this.ConfigInfo.Configuration.StoreAs)ÇÕìoò^çœÇ›Ç≈Ç∑ÅB")

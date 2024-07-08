@@ -34,7 +34,6 @@ param (
 ##########################
 # モジュールのロード
 ##########################
-Import-Module AWS.Tools.EC2
 . .\LogController.ps1
 . .\AWSLogonFunction.ps1
 
