@@ -2,8 +2,8 @@
 :: Copyright(c) 2024 BeeX Inc. All rights reserved.
 :: @auther:Naruhiro Ikeya
 ::
-:: @name:ExecAzureBackupJob.bat
-:: @summary:ExecAzureBackupJob.ps1 Wrapper
+:: @name:ExecAWSBackupJob.bat
+:: @summary:ExecAWSBackupJob.ps1 Wrapper
 ::
 :: @since:20i24/05/23
 :: @version:1.0
@@ -69,7 +69,7 @@ FORFILES /P %__LOGPATH__% /M *.log /D -%__LOG_CYCLE__% /C "CMD /C IF @isdir==FAL
 ::      スクリプト本体存在確認      ::
 ::::::::::::::::::::::::::::::::::::::
 IF NOT EXIST %~dpn0.ps1 (
-  CALL :__ECHO__ Azure Backup実行スクリプト（%~n0.ps1）が存在しません。
+  CALL :__ECHO__ AWS Backup実行スクリプト（%~n0.ps1）が存在しません。
   EXIT /B %__ERROR_CODE__%
 )
 
@@ -78,7 +78,7 @@ CD /d %~dp0
 ::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行      ::
 ::::::::::::::::::::::::::::::::::
-CALL :__ECHO__ Azure Backup実行処理（%~n0.ps1）を開始します。
+CALL :__ECHO__ AWS Backup実行処理（%~n0.ps1）を開始します。
 if "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
     set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
@@ -92,18 +92,18 @@ if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
 ::      スクリプト本体実行結果確認      ::
 ::::::::::::::::::::::::::::::::::::::::::
 IF ERRORLEVEL 9 (
-  CALL :__ECHO__ Azure Backup実行処理中にエラーが発生しました。
+  CALL :__ECHO__ AWS Backup実行処理中にエラーが発生しました。
   EXIT /B %__ERROR_CODE__%
 )
 IF ERRORLEVEL 2 (
-  CALL :__ECHO__ Azure Backup実行処理（Take Snapshotフェーズ）が完了しました。
+  CALL :__ECHO__ AWS Backup実行処理（Take Snapshotフェーズ）が完了しました。
   EXIT /B 0
 )
 IF ERRORLEVEL 1 (
-  CALL :__ECHO__ Azure Bakup実行処理中にパラメータエラーが発生しました。
+  CALL :__ECHO__ AWS Bakup実行処理中にパラメータエラーが発生しました。
   EXIT /B %__ERROR_CODE__%
 )
-CALL :__ECHO__ Azure Backup実行処理が完了しました。
+CALL :__ECHO__ AWS Backup実行処理が完了しました。
 
 :__QUIT__
 EXIT /B 0
