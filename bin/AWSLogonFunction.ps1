@@ -76,8 +76,20 @@ Class AWSLogonFunction {
             # Invoke Set-AWSCredential first
             $this.Log.Info("Set-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.ProfileName)")
             $Credential = Get-AWSCredential -ListProfileDetail | Where-Object { $_.ProfileName -eq $this.ConfigInfo.Configuration.ProfileName} 
-            $this.Log.Info("Profile Name: $($Credential.ProfileName)")
-            Set-AWSCredential -ProfileName $Credential.ProfileName -Scope Global
+            if (-not $Credential) {
+              if ($null -ne $env:JP1UserName) {
+                $this.Log.Info("Excution User: $($env:JP1UserName)")
+                $CredenticialFile = Join-Path -Path "C:\Users\$($env:JP1UserName)" -ChildPath ".aws\credentials"
+              } else {
+                $this.Log.Info("Excution User: $($env:USERNAME)")
+                $CredenticialFile = Join-Path -Path "$env:USERPROFILE" -ChildPath ".aws\credentials"
+              }
+              $this.Log.Info("Profile Name: $($Credential.ProfileName)")
+              Set-AWSCredential -ProfileName $Credential.ProfileName -ProfileLocation $CredenticialFile -Scope Global
+            } else {
+              $this.Log.Info("Profile Name: $($Credential.ProfileName)")
+              Set-AWSCredential -ProfileName $Credential.ProfileName -Scope Global
+            }
             $Region = Get-DefaultAWSRegion
             if(-not $Region) {
               $Region = Set-DefaultAWSRegion -Region $this.ConfigInfo.Configuration.Region -Scope Global
@@ -108,8 +120,10 @@ Class AWSLogonFunction {
       $this.Log.Info("Get-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.StoreAs)")
 ##      $this.Log.Info("Initialize-AWSDefaultConfiguration -ProfileName $($this.ConfigInfo.Configuration.StoreAs) -Region $($this.ConfigInfo.Configuration.Region)")
       $Credential = Get-AWSCredential -ProfileName $this.ConfigInfo.Configuration.StoreAs
+      ##  When a job is started from JP1/AJS3
       if (-not $Credential) {
-        $CredenticialFile = Join-Path -Path "$env:USERPROFILE" -ChildPath ".aws" | Join-Path -ChildPath  "credentials"
+        $this.Log.Info("実行ユーザー：$($env:USERNAME)")
+        $CredenticialFile = Join-Path -Path "$env:USERPROFILE" -ChildPath ".aws\credentials"
         Set-AWSCredential -AccessKey $this.ConfigInfo.Configuration.AccessKey -SecretKey $this.ConfigInfo.Configuration.SecretKey -StoreAs $this.ConfigInfo.Configuration.StoreAs -ProfileLocation $CredenticialFile
         $this.Log.Info("$($this.ConfigInfo.Configuration.StoreAs)を登録しました。")
       } else {
