@@ -84,8 +84,8 @@ Class AWSLogonFunction {
                 $this.Log.Info("Excution User: $($env:USERNAME)")
                 $CredenticialFile = Join-Path -Path "$env:USERPROFILE" -ChildPath ".aws\credentials"
               }
-              $this.Log.Info("Profile Name: $($Credential.ProfileName)")
-              Set-AWSCredential -ProfileName $Credential.ProfileName -ProfileLocation $CredenticialFile -Scope Global
+              $this.Log.Info("Profile Name: $($this.ConfigInfo.Configuration.ProfileName)")
+              Set-AWSCredential -ProfileName $($this.ConfigInfo.Configuration.ProfileName) -ProfileLocation $CredenticialFile -Scope Global
             } else {
               $this.Log.Info("Profile Name: $($Credential.ProfileName)")
               Set-AWSCredential -ProfileName $Credential.ProfileName -Scope Global
