@@ -29,7 +29,6 @@ SET __ERROR_CODE__=-1
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::
 :::::::::::::::::::::::::::::::::::
-SET __ARGC__=0
 FOR /F "usebackq" %%L IN (`powershell -command "\"%*\".split(\" \").count"`) DO SET __ARGC__=%%L
 
 IF %__ARGC__% lss 4 (

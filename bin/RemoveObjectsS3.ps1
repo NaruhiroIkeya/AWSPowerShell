@@ -11,11 +11,10 @@
 ## @parameter
 ##  1:バケット名
 ##  2:KeyPrefix
-##  3:KeyPattern
-##  4:保持期間
-##  5:リージョン名
-##  6:イベントログ出力
-##  7:標準出力
+##  3:保持期間
+##  4:リージョン名
+##  5:イベントログ出力
+##  6:標準出力
 ##
 ## @return:0:Success 9:エラー終了 / 99:Exception
 ################################################################################>
@@ -101,8 +100,8 @@ try {
 
   $S3Bucket = Get-S3Bucket -BucketName $BucketName -Region $RegionName
   if ($S3Bucket) {
-    $Log.Info("Get-S3Object -BucketName $($S3Bucket.BucketName) -KeyPrefix $KeyPrefix `| Where-Object {`$`_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString(""yyyy/MM/dd hh:mm:ss"") -and `$`_.Key.LastIndexOf(""/"") -ne `$(`$`_.Key.Length -1) -and `$`_.Key -match $KeyPattern} ")
-    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object {$_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd hh:mm:ss") -and $_.Key.LastIndexOf("/") -ne $($_.Key.Length -1) -and $_.Key.LastIndexOf("/") -and $_.Key -match $KeyPattern}
+    $Log.Info("Get-S3Object -BucketName $($S3Bucket.BucketName) -KeyPrefix $KeyPrefix `| Where-Object { `$`_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString(""yyyy/MM/dd HH:mm:ss"") -and `$`_.Key.LastIndexOf(""/"") -ne `$(`$`_.Key.Length -1) -and `$`_.Key -match ""$KeyPattern"" } ")
+    $S3Objects = Get-S3Object -BucketName $S3Bucket.BucketName -KeyPrefix $KeyPrefix | Where-Object { $_.LastModified -lt ((get-Date).AddDays(-1 * $Term)).ToString("yyyy/MM/dd HH:mm:ss") -and $_.Key.LastIndexOf("/") -ne $($_.Key.Length -1) -and $_.Key.LastIndexOf("/") -and $_.Key -match "$KeyPattern" }
     foreach ($Obj in $S3Objects) {
       $Log.Info("$($Obj.Key) を削除します。")
       $Result = Remove-S3Object -BucketName $BucketName -Key $Obj.Key -Force
