@@ -58,7 +58,7 @@ SET __NOW__=%__TODAY__%%__TIME__: =0%
 ::::::::::::::::::::::::::::::::::::
 FOR /F "usebackq" %%L IN (`powershell -command "Split-Path %~dp0 -Parent | Join-Path -ChildPath log"`) DO SET __LOGPATH__=%%L
 IF NOT EXIST %__LOGPATH__% MKDIR %__LOGPATH__%
-SET __LOGFILE__=%__LOGPATH__%\%~n0_%_VMNAME__%_%__NOW__%.log
+SET __LOGFILE__=%__LOGPATH__%\%~n0_%__VMNAME__%_%__NOW__%.log
 
 ::::::::::::::::::::::::::::::::::::::::::::::
 ::      出力ログファイルローテーション      ::
@@ -86,7 +86,7 @@ if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
     set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__START_WINDOW__% %__COMPLETE_WINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout -Windows %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__START_WINDOW__% %__COMPLETE_WINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 
 ::::::::::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行結果確認      ::

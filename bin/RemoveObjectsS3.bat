@@ -77,7 +77,7 @@ CD /d %~dp0
 ::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行      ::
 ::::::::::::::::::::::::::::::::::
-CALL :__ECHO__ 仮想マシン起動処理（%__PS_SCRIPT__%）を開始します。
+CALL :__ECHO__ S3オブジェクト削除処理（%__PS_SCRIPT__%）を開始します。
 if "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
     set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
