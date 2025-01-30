@@ -52,6 +52,7 @@ param (
 [string]$CurrentState = "Online"
 [bool]$ErrorFlg = $false
 [int]$RetryInterval = 15
+[int]$MonitoringTimeoutHour = 6
 $ErrorActionPreference="Stop"
 
 ##########################
@@ -203,15 +204,29 @@ try {
   }
   if($BackupResult) {
     $Log.Info("BackupJobId: $($BackupResult.BackupJobId)")
-    $Log.Info("CreationDate: $($BackupResult.CreationDate)")
+    $Log.Info("CreationDate: $($BackupResult.CreationDate) (UTC)")
+    $StartDate = [DateTime]::ParseExact($($BackupResult.BackupJobId), "dd/MM/yyyy HH:mm:ss", $null).ToLocalTime()
+    $Log.Info("CreationDate: $StartDate (Localtime)")
+    $SuspendDate = $StartDate.AddHours($MonitoringTimeoutHour)
+    $Log.Info("MonitoringSuspendDate: $SuspendDate (Localtime)")
     #################################################
     # ジョブ終了待機(Snapshot取得待ち)
     #################################################
     $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
     if("RUNNING" -eq (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
-      while("CREATED" -ne (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
-        $Log.Info("Waiting for our backup to reach the state of created...")
-        Start-Sleep -Seconds $RetryInterval
+      While(1 -ne (Get-Date).CompareTo($SuspendDate)) {
+        if ("CREATED" -ne (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
+          $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
+          $Log.Info("Waiting for our backup to reach the state of created...")
+          Start-Sleep -Seconds $RetryInterval
+        } else {
+          $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
+          break
+        }
+      }
+      if (1 -ne (Get-Date).CompareTo($SuspendDate)) {
+        $Log.Warn("Monitoring Timeout: $(Get-Date) (Localtime)")
+        $ErrorFlg = $true
       }
     } elseif("FAILED" -eq (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
       $ErrorFlg = $true
