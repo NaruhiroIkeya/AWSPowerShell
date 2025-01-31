@@ -22,7 +22,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :::::::::::::::::::::::::::::
 SET __LOG_CYCLE__=7
 SET __APL_PS1__=EC2BootController.ps1
-SET __ERROR_CODE__=-1
+SET __ERROR_CODE__=0
 
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::

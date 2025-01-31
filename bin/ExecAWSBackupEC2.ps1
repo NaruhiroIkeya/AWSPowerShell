@@ -51,9 +51,10 @@ param (
 [string]$CredenticialFile = "AWSCredential_Secure.xml"
 [string]$CurrentState = "Online"
 [bool]$ErrorFlg = $false
-[int]$RetryInterval = 15
-[int]$MonitoringTimeoutHour = 6
+[int]$RetryInterval = 30
+[int]$MonitoringTimeoutHour = 3
 $ErrorActionPreference="Stop"
+$FinishState="CREATED"
 
 ##########################
 # 警告の表示抑止
@@ -194,49 +195,51 @@ try {
     #################################################
     # VSS連携バックアップ
     #################################################
+    $options = @{WindowsVSS = "enabled"}
     ##$Log.Info("[ Windows: $Windows ] ") 
     ##$Log.Info("[ Offline: $Offline ] ") 
     ##$Log.Info("[ CurrentState: $CurrentState ] ") 
     ##$Log.Info("[ $IamRoleArn ] ") 
-    $options = @{WindowsVSS = "enabled"}
     ##$log.Info("Start-BAKBackupJob -BackupOption $options -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn")
     $BackupResult = Start-BAKBackupJob -BackupOption $options -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn
   }
   if($BackupResult) {
     $Log.Info("BackupJobId: $($BackupResult.BackupJobId)")
     $Log.Info("CreationDate: $($BackupResult.CreationDate) (UTC)")
-    $StartDate = [DateTime]::ParseExact($($BackupResult.BackupJobId), "dd/MM/yyyy HH:mm:ss", $null).ToLocalTime()
+    $StartDate = [DateTime]::ParseExact($($BackupResult.CreationDate), "MM/dd/yyyy HH:mm:ss", $null).ToLocalTime()
     $Log.Info("CreationDate: $StartDate (Localtime)")
     $SuspendDate = $StartDate.AddHours($MonitoringTimeoutHour)
     $Log.Info("MonitoringSuspendDate: $SuspendDate (Localtime)")
+    $Log.Info("BackupJobFinishState: $FinishState")
+    $JobState = (Get-BAKBackupJob $BackupResult.BackupJobId).State
     #################################################
     # ジョブ終了待機(Snapshot取得待ち)
     #################################################
-    $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
-    if("RUNNING" -eq (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
-      While(1 -ne (Get-Date).CompareTo($SuspendDate)) {
-        if ("CREATED" -ne (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
-          $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
-          $Log.Info("Waiting for our backup to reach the state of created...")
-          Start-Sleep -Seconds $RetryInterval
+    While(-1 -eq (Get-Date).CompareTo($SuspendDate)) {
+      if (@("CREATED", "ABORTED", "COMPLETED", "FAILED", "EXPIRED", "PARTIAL") -contains $JobState) {
+        if ($FinishState -eq $JobState) {
+          $Log.Info("BackupJobState: $JobState")
+          break
+        } elseif (@("CREATED", "COMPLETED", "PARTIAL") -contains $JobState) {
+          $Log.Info("BackupJobState: $JobState")
+          break
         } else {
-          $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
+          $ErrorFlg = $true                
+          $Log.Info("BackupJobState: $JobState")
           break
         }
+      } else {
+        $Log.Info("BackupJobState: $JobState")
+        $Log.Info("Waiting for our backup to reach the state of created...")
+        Start-Sleep -Seconds $RetryInterval
       }
-      if (1 -ne (Get-Date).CompareTo($SuspendDate)) {
-        $Log.Warn("Monitoring Timeout: $(Get-Date) (Localtime)")
-        $ErrorFlg = $true
-      }
-    } elseif("FAILED" -eq (Get-BAKBackupJob $BackupResult.BackupJobId).State) {
+      $JobState = (Get-BAKBackupJob $BackupResult.BackupJobId).State
+    }
+    if (-1 -ne (Get-Date).CompareTo($SuspendDate)) {
+      $Log.Warn("Monitoring Timeout: $(Get-Date) (Localtime)")
       $ErrorFlg = $true
-    } else {
-      $Log.Info("BackupJobState: $((Get-BAKBackupJob $BackupResult.BackupJobId).State)")
     }
     $Log.Info("AWS Backupジョブが終了しました。")
-  } else {
-    $Log.Error("AWS Backupジョブがエラー終了しました。")
-    $ErrorFlg = $true
   }
 
   ####################################################
@@ -255,7 +258,7 @@ try {
           Start-Sleep -Seconds $RetryInterval
         }
       } else {
-        $Log.Info("EC2起動ジョブ実行に失敗しました。")
+        ]$Log.Info("EC2起動ジョブ実行に失敗しました。")
         exit 9
       }
       $Log.Info("EC2起動ジョブが完了しました。")

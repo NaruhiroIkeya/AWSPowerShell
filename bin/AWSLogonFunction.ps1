@@ -98,6 +98,15 @@ Class AWSLogonFunction {
             $this.Log.Info("Default Region: $($Region.Name)")
           }
 
+          "Instance" {
+            $Region = Get-DefaultAWSRegion
+            if(-not $Region) {
+              $Region = Set-DefaultAWSRegion -Region $this.ConfigInfo.Configuration.Region -Scope Global
+              $Region = Get-DefaultAWSRegion
+            }
+            $this.Log.Info("Default Region: $($Region.Name)")
+          }
+
           default {
             $this.Log.error("AWSへログイン:失敗:認証方式設定不備")
             return $false 
