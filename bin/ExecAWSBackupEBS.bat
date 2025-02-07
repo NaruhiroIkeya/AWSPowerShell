@@ -1,15 +1,15 @@
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: Copyright(c) 2024 BeeX Inc. All rights reserved.
+:: Copyright(c) 2025 BeeX Inc. All rights reserved.
 :: @auther:Naruhiro Ikeya
 ::
-:: @name:ExecAWSBackupEC2.bat
-:: @summary:ExecAWSBackupEC2.ps1 Wrapper
+:: @name:ExecAWSBackupEBS.bat
+:: @summary:ExecAWSBackupEBS.ps1 Wrapper
 ::
-:: @since:2024/05/23
+:: @since:2025/02/07
 :: @version:1.0
 :: @see:
 :: @parameter
-::  1:AWSVM名
+::  1:EBS名
 ::  2:Vault名
 ::  3:バックアップ保管日数
 ::  4:AWS Backup バックアップウインドウ(開始)
@@ -35,13 +35,13 @@ FOR %%a IN ( %* ) DO SET /A __ARGC__+=1
 IF %__ARGC__% leq 4 (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
-  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow[Start] BackupWindow[End] [VSS]
+  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EBS名 vault名 バックアップ保持日数 BackupWindow[Start] BackupWindow[End] [VSS]
   EXIT /B 1
 )
 IF %__ARGC__% equ 6 IF "VSS" neq "%6" (
   SET __TIME__=%TIME:~0,8%
   SET __TIME__=!__TIME__: =0!
-  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EC2名 vault名 バックアップ保持日数 BackupWindow[Start] BackupWindow[End] [VSS]
+  ECHO [%DATE% !__TIME__!] Usage:%~nx0 EBS名 vault名 バックアップ保持日数 BackupWindow[Start] BackupWindow[End] [VSS]
   EXIT /B 1
 )
 

@@ -1,15 +1,15 @@
 <################################################################################
-## Copyright(c) 2024 BeeX Inc. All rights reserved.
+## Copyright(c) 2025 BeeX Inc. All rights reserved.
 ## @auther#Naruhiro Ikeya
 ##
-## @name:ExecAWSBackupEC2.ps1
+## @name:ExecAWSBackupEBS.ps1
 ## @summary:AWSバックアップ実行本体
 ##
-## @since:2024/05/22
+## @since:2025/02/07
 ## @version:1.0
 ## @see:
 ## @parameter
-##  1:AWSVM名
+##  1:EBS名
 ##  2:Vault名
 ##  3:バックアップ保管日数
 ##  4:AWS Backup バックアップウインドウ
@@ -25,14 +25,12 @@
 # パラメータ設定
 ##########################
 param (
-  [parameter(mandatory=$true)][string]$EC2Name,
+  [parameter(mandatory=$true)][string]$EBSName,
   [parameter(mandatory=$true)][string]$VaultName,
   [parameter(mandatory=$true)][int]$CycleDays,
   [parameter(mandatory=$true)][int64]$StartWindow,
   [parameter(mandatory=$true)][int64]$CompleteWindow,
   [string]$RegionName,
-  [switch]$Offline=$false,
-  [switch]$Windows=$false,
   [switch]$Complete=$false,
   [switch]$Eventlog=$false,
   [switch]$Stdout=$false
@@ -121,88 +119,47 @@ try {
   $Log.Info("AWS Region: $RegionName")
 
   ############################
-  # EC2名のチェック
+  # EBS名のチェック
   ############################
-  $filter = New-Object Amazon.EC2.Model.Filter
+  $filter = New-Object Amazon.EC2.model.Filter
   $filter.Name = "tag:Name"
-  $filter.Values = $EC2Name
+  $filter.Values = $EBSName
 
-  $Instance = (Get-EC2Instance -Filter $filter).Instances
-  if(-not $Instance) { 
-    $Log.Error("EC2名が不正です。" + $EC2Name)
+  $Volume = (Get-EC2Volume -Filter $filter)
+  if(-not $Volume) { 
+    $Log.Error("EBS名が不正です。" + $EBSName)
     exit 9
-  } elseif($Instance.count -ne 1) {
-    $Log.Error("Name TagからインスタンスIDが特定できません。" + $EC2Name)
+  } elseif($Volume.count -ne 1) {
+    $Log.Error("Name TagからボリュームIDが特定できません。" + $EBSName)
     exit 9
   }
 
   ##############################
-  # EC2のステータスチェック
+  # EBSのステータスチェック
   ##############################h
-  $Log.Info("$EC2Name のステータスを取得します。")
-  $Log.Info("Instance Id [" + $Instance.InstanceId + "] ")
-  $Log.Info("Instance Type [" + $Instance.InstanceType + "] ")
-  $Log.Info("現在のステータスは [" + $Instance.State.Name.Value + "] です。") 
-  $CurrentState = $Instance.State.Name
+  $Log.Info("$EBSName のステータスを取得します。")
+  $Log.Info("Volume Id [" + $Volume.VolumeId + "] ")
+  $Log.Info("Volume Type [" + $Volume.VolumeType + "] ")
+  $Log.Info("現在のステータスは [" + $Volume.State.Vault + "] です。") 
   ##############################
   # ARN設定
-  ##############################h
-  $ResourceArn = "arn:aws:ec2:$($RegionName):$($Instance.NetworkInterfaces.OwnerId):instance/$($Instance.InstanceId)" 
+  ##############################
+  $AccountId=((Invoke-WebRequest "http://169.254.169.254/latest/dynamic/instance-identity/document").Content | ConvertFrom-Json).accountId
+  $ResourceArn = "arn:aws:ec2:$($RegionName):$($AccountId):volume/$($Volume.VolumeId)" 
   $Log.Info("[ $ResourceArn ] ") 
-  $IamRoleArn = "arn:aws:iam::$($Instance.NetworkInterfaces.OwnerId):role/service-role/AWSBackupDefaultServiceRole"
+  $IamRoleArn = "arn:aws:iam::$($AccountId):role/service-role/AWSBackupDefaultServiceRole"
   $Log.Info("[ $IamRoleArn ] ") 
-
-  ####################################################
-  # バックアップ時に停止状態でなければ、インスタンスを停止
-  ####################################################
-  if($Offline) {
-    ##############################
-    # EC2の停止
-    ##############################
-    if("running" -eq $Instance.State.Name) { 
-      $Log.Info("EC2を停止します。")
-      $Result = Stop-EC2Instance -InstanceId $Instance.InstanceId
-      if($Result) {
-        while("stopped" -ne (Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value) {
-          $Log.Info("Waiting for our instance to reach the state of stopped...")
-          Start-Sleep -Seconds $RetryInterval
-        }
-      } else {
-        $Log.Info("EC2停止ジョブ実行に失敗しました。")
-        exit 9
-      }
-      $Log.Info("EC2停止ジョブが完了しました。")
-    } else {
-      $Log.Info("EC2停止処理をキャンセルします。現在のステータスは [" + $Instance.State.Name + "] です。")
-    }
-  }
 
   #################################################
   # AWS Backup(IaaS) 実行
   #################################################
   $BackupResult = $null
-  if((-not $Windows) -or $Offline -or ("stopped" -eq $CurrentState)) {
-    #################################################
-    # クラッシュコンシステントバックアップ
-    #################################################
-    ##$Log.Info("[ Windows: $Windows ] ") 
-    ##$Log.Info("[ Offline: $Offline ] ") 
-    ##$Log.Info("[ CurrentState: $CurrentState ] ") 
-    ##$Log.Info("[ $IamRoleArn ] ") 
-    ##$log.Info("Start-BAKBackupJob -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn")
-    $BackupResult = Start-BAKBackupJob -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn
-  } else {
-    #################################################
-    # VSS連携バックアップ
-    #################################################
-    $options = @{WindowsVSS = "enabled"}
-    ##$Log.Info("[ Windows: $Windows ] ") 
-    ##$Log.Info("[ Offline: $Offline ] ") 
-    ##$Log.Info("[ CurrentState: $CurrentState ] ") 
-    ##$Log.Info("[ $IamRoleArn ] ") 
-    ##$log.Info("Start-BAKBackupJob -BackupOption $options -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn")
-    $BackupResult = Start-BAKBackupJob -BackupOption $options -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn
-  }
+  #################################################
+  # クラッシュコンシステントバックアップ
+  #################################################
+  ##$log.Info("Start-BAKBackupJob -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn")
+  $BackupResult = Start-BAKBackupJob -BackupVaultName $VaultName -Lifecycle_DeleteAfterDay $CycleDays -StartWindowMinute $StartWindow -CompleteWindowMinute $CompleteWindow -ResourceArn $ResourceArn -IamRoleArn $IamRoleArn
+
   if($BackupResult) {
     $Log.Info("BackupJobId: $($BackupResult.BackupJobId)")
     $Log.Info("CreationDate: $($BackupResult.CreationDate) (UTC)")
@@ -240,32 +197,6 @@ try {
       $ErrorFlg = $true
     }
     $Log.Info("AWS Backupジョブが終了しました。")
-  }
-
-  ####################################################
-  # バックアップ時に停止状態でなければ、インスタンスを起動
-  ####################################################
-  if($Offline -and -not ("stopped" -eq $CurrentState)) {
-    ##############################
-    # EC2の起動
-    ##############################
-    if("stopped" -eq $Instance.State.Name) { 
-      $Log.Info("EC2を起動します。")
-      $Result = Start-EC2Instance -InstanceId $Instance.InstanceId
-      if($Result) {
-        while("running" -ne (Get-EC2InstanceStatus -IncludeAllInstance $true -InstanceId $Instance.InstanceId).InstanceState.Name.Value) {
-          $Log.Info("Waiting for our instance to reach the state of running...")
-          Start-Sleep -Seconds $RetryInterval
-        }
-      } else {
-        ]$Log.Info("EC2起動ジョブ実行に失敗しました。")
-        exit 9
-      }
-      $Log.Info("EC2起動ジョブが完了しました。")
-    } else {
-      $Log.Info("EC2起動処理をキャンセルします。現在のステータスは [" + $Instance.State.Name + "] です。")
-      exit 0
-    }
   }
 
   #################################################
