@@ -3,20 +3,20 @@
 ## @auther#Naruhiro Ikeya
 ##
 ## @name:ReplaceDBPath.ps1
-## @summary:Database „Éï„Ç°„Ç§„É´„Éë„Çπ„ÅÆÂ§âÊõ¥
+## @summary:Database ÉtÉ@ÉCÉãÉpÉXÇÃïœçX
 ## @sample:C:\SCripts\ReplaceDBPath.ps1 USERDB "K,j" "e,f" "k,h"
 ##
 ## @since:2025/02/16
 ## @version:1.0
 ## @see:
 ## @parameter
-##  1:‰∏ñ‰ª£
+##  1:ê¢ë„
 ##
 ## @return:0:Success 
 ################################################################################>
 
 ##########################
-# „Éë„É©„É°„Éº„ÇøË®≠ÂÆö
+# ÉpÉâÉÅÅ[É^ê›íË
 ##########################
 param (
   [parameter(mandatory=$true)][string]$SID_DB,
@@ -42,7 +42,7 @@ catch {
 }
 
 ##########################
-# „Éâ„É©„Ç§„ÉñÊñáÂ≠óÂàó„ÉÅ„Çß„ÉÉ„ÇØ
+# ÉhÉâÉCÉuï∂éöóÒÉ`ÉFÉbÉN
 ##########################
 $SourceDriveLetters = $Source_Drive_Letters.ToUpper() -split ",\s*"
 foreach($DriveLetter in $SourceDriveLetters) {
@@ -60,11 +60,13 @@ foreach($DriveLetter in $TargetDriveLetters) {
   }
 }
 
-$RemoveDriveLetters = $Remove_Drive_Letters.ToUpper() -split ",\s*"
-foreach($DriveLetter in $RemoveDriveLetters) {
-  if((1 -ne $DriveLetter.length) -or !(Test-Path $($DriveLetter + ":"))) {
-    echo "Please check remove drive letter settings...: $DriveLetter"
-    exit 9
+if(-not [String]::IsNullOrEmpty($Remove_Drive_Letters)) {
+  $RemoveDriveLetters = $Remove_Drive_Letters.ToUpper() -split ",\s*"
+  foreach($DriveLetter in $RemoveDriveLetters) {
+    if((1 -ne $DriveLetter.length) -or !(Test-Path $($DriveLetter + ":"))) {
+      echo "Please check remove drive letter settings...: $DriveLetter"
+      exit 9
+    }
   }
 }
 
@@ -74,7 +76,7 @@ if($SourceDriveLetters.Count -ne $TargetDriveLetters.Count) {
 }
 
 ############################
-# ÁßªÂãïÂÖÉDB„Éï„Ç°„Ç§„É´PathÂèñÂæó
+# à⁄ìÆå≥DBÉtÉ@ÉCÉãPathéÊìæ
 ############################
 $SAPDBFile_FullPath = @()
 foreach($FileGroup in $SAPDBInstance.FileGroups) {
@@ -83,7 +85,7 @@ foreach($FileGroup in $SAPDBInstance.FileGroups) {
   }
 }
 ############################
-# ÁßªÂãïÂÖÉDBLog„Éï„Ç°„Ç§„É´PathÂèñÂæó
+# à⁄ìÆå≥DBLogÉtÉ@ÉCÉãPathéÊìæ
 ############################
 foreach($LogFiles in $SAPDBInstance.LogFiles) {
   if(Test-Path $DBFile.FileName) { $SAPDBFile_FullPath += $LogFiles.FileName }
@@ -93,7 +95,7 @@ echo $SAPDBFile_FullPath
 $($SAPDBFile_FullPath -Join ",") | Out-String > $($SID_DB+"_Before_Database.csv")
 
 ##########################
-# SQLServerÂÜçËµ∑Âãï
+# SQLServerçƒãNìÆ
 ##########################
 [reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement")
 $ManagedComputer = New-Object -TypeName Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer
@@ -106,6 +108,8 @@ do {
 } while ("Stopped" -ne $Svc.ServiceState)
 Write-Host "Service $($Svc.Name) is now stopped"
 
+Start-Sleep 10
+
 Write-Host "Starting $($Svc.Name)"
 $Svc.Start()
 do {
@@ -116,15 +120,15 @@ Write-Host "Service $($Svc.Name) is now started"
 $Svc.Refresh()
 
 ##########################
-# ÁßªÂãïÂÖÉDB„Éá„Çø„ÉÉ„ÉÅ
+# à⁄ìÆå≥DBÉfÉ^ÉbÉ`
 ##########################
 Write-Host "Detach Database:$SID_DB"
 do {
-  (Get-Item SQLSERVER:\SQL\\$env:COMPUTERNAME\DEFAULT).DetachDatabase($SID_DB, $true, $true)
+  (Get-Item SQLSERVER:\SQL\\$env:COMPUTERNAME\DEFAULT).DetachDatabase($SID_DB, $false)
 } while (Test-Path SQLSERVER:\SQL\$env:COMPUTERNAME\DEFAULT\Databases\$SID_DB) 
 
 ##########################
-# „Éâ„É©„Ç§„Éñ„É¨„Çø„ÉºÊõ¥Êñ∞
+# ÉhÉâÉCÉuÉåÉ^Å[çXêV
 ##########################
 for($cnt=0; $cnt -lt $SourceDriveLetters.Count; $cnt++) {
   Write-Host "Remove Drive Letter:$($TargetDriveLetters[$cnt])"
@@ -141,9 +145,10 @@ for($cnt=0; $cnt -lt $SourceDriveLetters.Count; $cnt++) {
 }
 $New_SAPDBFile_FullPath
 $($New_SAPDBFile_FullPath -Join ",") | Out-String > $($SID_DB+"_After_Database.csv")
+Get-Partition | Where-Object {$_.Type -ne "Reserved" -and $_.Driveletter -ne 0} | Select-Object DriveLetter, DiskNumber, PartitionNumber, UniqueId | Sort-Object -Property DriveLetter | FT
 
 ##########################
-# ÁßªÂãïÂÖÉDB„Ç¢„Çø„ÉÉ„ÉÅ
+# à⁄ìÆå≥DBÉAÉ^ÉbÉ`
 ##########################
 Write-Host "Attach Database:$SID_DB"
 $DBFiles = New-Object System.Collections.Specialized.StringCollection
@@ -158,23 +163,51 @@ if(-not (Test-Path SQLSERVER:\SQL\$env:COMPUTERNAME\DEFAULT\Databases\$SID_DB)) 
 } else {
   Write-Host "already exist database:$SID_DB"
 }
+Start-Sleep 10
 
 ##########################
-# ‰∏çË¶Å„Éâ„É©„Ç§„Éñ„ÅÆÁÑ°ÂäπÂåñ
+# SQLServerçƒãNìÆ
 ##########################
-if($null -ne $Remove_Drive_Letters) {
+[reflection.assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement")
+$ManagedComputer = New-Object -TypeName Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer
+$Svc = $ManagedComputer.Services["MSSQLSERVER"]
+Write-Host "Stopping $($Svc.Name)"
+$Svc.Stop()
+do {
+  $Svc.Refresh()
+  Start-Sleep 3
+} while ("Stopped" -ne $Svc.ServiceState)
+Write-Host "Service $($Svc.Name) is now stopped"
+
+Start-Sleep 10
+
+Write-Host "Starting $($Svc.Name)"
+$Svc.Start()
+do {
+  $Svc.Refresh()
+  Start-Sleep 3
+} while ("Running" -ne $Svc.ServiceState)
+Write-Host "Service $($Svc.Name) is now started"
+$Svc.Refresh()
+
+##########################
+# ïsóvÉhÉâÉCÉuÇÃñ≥å¯âª
+##########################
+if(-not [String]::IsNullOrEmpty($Remove_Drive_Letters)) {
   $RemoveDriveLetters = $Remove_Drive_Letters.ToUpper() -split ",\s*"
   foreach($DriveLetter in $RemoveDriveLetters) {
+    Write-Host "Remove Drive Letter:$($DriveLetter)"
     Remove-PartitionAccessPath -DriveLetter $DriveLetter -AccessPath $(Join-Path $($DriveLetter+":") \)
   }
 }
 
 ##########################
-# ‰∏çË¶Å„Éú„É™„É•„Éº„É†„ÅÆË°®Á§∫
+# ïsóvÉ{ÉäÉÖÅ[ÉÄÇÃï\é¶
 ##########################
+Get-Partition | Where-Object {$_.Type -ne "Reserved" -and $_.Driveletter -eq 0} | Select-Object DriveLetter, DiskNumber, UniqueId | Sort-Object -Property DiskNumber | FT
+$DisableDiskInfo = Get-Partition | Where-Object {$_.Type -ne "Reserved" -and $_.Driveletter -eq 0} | Select-Object DriveLetter, DiskNumber, UniqueId | Sort-Object -Property DiskNumber
 Write-Host "Please detach EBS volumes"
-$DisableDiskInfo = Get-Partition | Select-Object DriveLetter, DiskNumber, UniqueId | Where-Object {$_.Driveletter -eq 0}
-foreach($DiskInfo in $DisableDiskInfo) {
+foreach($DiskInfo in $DisableDiskInfo) { 
   Set-Disk -IsOffline $true -Number $DiskInfo.DiskNumber
   Write-Host "$($DiskInfo.UniqueId.Substring(38,3))-$($DiskInfo.UniqueId.Substring(41,17))"
 }

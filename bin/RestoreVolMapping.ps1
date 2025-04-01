@@ -1,5 +1,5 @@
 ###############################
-# ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿è¡¨ç¤º
+# ƒƒ^ƒf[ƒ^•\¦
 ###############################
 $SQLMetadataList = $(Get-Childitem C:\ProgramData\Amazon\AwsVss\VssMetadata\*SqlServerWriter.xml)| Sort-Object LastWriteTime -Descending | Select-Object FullName, Name, LastWriteTime
 foreach($SQLMetadata in $SQLMetadataList) {
@@ -9,7 +9,7 @@ foreach($SQLMetadata in $SQLMetadataList) {
 
 ###############################
 # C:\ProgramData\Amazon\Tools\ebsnvme-id.exe
-# ã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œ
+# ƒRƒ}ƒ“ƒhÀs
 ###############################
 $EBSNVMECMD=C:\ProgramData\Amazon\Tools\ebsnvme-id.exe
 $VolumeInfo = $EBSNVMECMD
@@ -23,10 +23,10 @@ for($cnt=0; $cnt -lt $VolumeInfo.Count; $cnt+=4) {
 }
 
 ###############################
-# ã‚ªãƒ•ãƒ©ã‚¤ãƒ³ãƒœãƒªãƒ¥ãƒ¼ãƒ ã®è¡¨ç¤º
+# ƒIƒtƒ‰ƒCƒ“ƒ{ƒŠƒ…[ƒ€‚Ì•\¦
 ###############################
 $arrDeviceMapping = New-Object System.Collections.Generic.List[string]
-$RemovedDriveLetterDisks = Get-Partition | Select-Object DriveLetter, DiskNumber, UniqueId | Where-Object {$_.Driveletter -eq 0}
+$RemovedDriveLetterDisks = Get-Partition | Where-Object {$_.Type -ne "Reserved" -and $_.Driveletter -eq 0} | Select-Object DriveLetter, DiskNumber, UniqueId
 foreach($DiskInfo in $RemovedDriveLetterDisks) {
   $TargetDisk = $colDiskInfo | Where-Object { $_.DiskNumber -eq $DiskInfo.DiskNumber } 
   $arrDeviceMapping.Add($TargetDisk.VolumeID + ':' + $TargetDisk.DeviceName)

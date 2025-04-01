@@ -3,82 +3,108 @@
 ## @auther#Naruhiro Ikeya
 ##
 ## @name:SQLMetadataMaint.ps1
-## @summary:SSM CreateVssSnapshotãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ãƒ¡ãƒ³ãƒ†ãƒŠãƒ³ã‚¹
+## @summary:SSM CreateVssSnapshotƒƒ^ƒf[ƒ^ƒƒ“ƒeƒiƒ“ƒX
 ##
 ## @since:2025/02/16
 ## @version:1.0
 ## @see:
 ## @parameter
-##  1:ä¸–ä»£
+##  1:¢‘ã
 ##
 ## @return:0:Success 
 ################################################################################>
 
 ##########################################################
-# ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿è¨­å®š
+# ƒpƒ‰ƒ[ƒ^İ’è
 ##########################################################
 param (
   [parameter(mandatory=$true)][int]$Generation
 )
 
 ##########################################################
-# ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰å…ˆè¨­å®š
+# ƒAƒbƒvƒ[ƒhæİ’è
 ##########################################################
-$uploadServer = "\\172.31.39.174\Metadata"
-$uploadDir = Get-Date -Format "yyyyMMdd"
-$TargetFolder = "C:\ProgramData\Amazon\AwsVss\VssMetadata"
-$uploadUser = ".\Administrator"
-$uploadPass = 'A9NH$jU6hg!SZ6WV2;9idyqk*KIal0;C'
+$SharedFolder = "\\172.31.39.174\Metadata"
+$UploadDir = Get-Date -Format "yyyyMMdd"
+$SourceFolder = "C:\ProgramData\Amazon\AwsVss\VssMetadata"
+$UploadUser = ".\Administrator"
+$UploadPass = 'A9NH$jU6hg!SZ6WV2;9idyqk*KIal0;C'
 
-##########################################################
-# ä¸è¦ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ãƒ•ã‚¡ã‚¤ãƒ«å‰Šé™¤
-##########################################################
-$SQLMetadataList = $(Get-Childitem C:\ProgramData\Amazon\AwsVss\VssMetadata\*SqlServerWriter.xml)| Sort-Object LastWriteTime -Descending | Select-Object FullName, Name
-$BCDMetadataList = $(Get-Childitem C:\ProgramData\Amazon\AwsVss\VssMetadata\*BCD.xml)| Sort-Object LastWriteTime -Descending | Select-Object FullName, Name
+try {
+  ##########################################################
+  # •s—vƒƒ^ƒf[ƒ^ƒtƒ@ƒCƒ‹íœ
+  ##########################################################
+  $SQLMetadataList = $(Get-Childitem C:\ProgramData\Amazon\AwsVss\VssMetadata\*SqlServerWriter.xml)| Sort-Object LastWriteTime -Descending | Select-Object FullName, Name
+  $BCDMetadataList = $(Get-Childitem C:\ProgramData\Amazon\AwsVss\VssMetadata\*BCD.xml)| Sort-Object LastWriteTime -Descending | Select-Object FullName, Name
 
+  foreach($SQLMetadataFile in $SQLMetadataList) { Write-Output "SqlServerWriter: $($SQLMetadataFile.Name)" }
+  foreach($BCDMetadataFile in $BCDMetadataList) { Write-Output "BCD: $($BCDMetadataFile.Name)" }
 
-foreach($SQLMetadataFile in $SQLMetadataList) { Write-Output "SqlServerWriter: $($SQLMetadataFile.Name)" }
-foreach($BCDMetadataFile in $BCDMetadataList) { Write-Host "BCD: $($BCDMetadataFile.Name)" }
+  for($cnt = $Generation; $cnt -lt $SQLMetadataList.Count; $cnt++) {
+    Write-Output "Delete Metadata File: $($SQLMetadataList[$cnt].Name)"
+    Remove-Item $SQLMetadataList[$cnt].FullName -Force
+  }
 
-for($cnt = $Generation; $cnt -lt $SQLMetadataList.Count; $cnt++) {
-  Write-Output "Delete Metadata File: $($SQLMetadataList[$cnt].Name)"
-  Remove-Item $SQLMetadataList[$cnt].FullName -Force
+  for($cnt = $Generation; $cnt -lt $BCDMetadataList.Count; $cnt++) {
+    Write-Output "Delete Metadata File: $($BCDMetadataList[$cnt].Name)"
+    Remove-Item $BCDMetadataList[$cnt].FullName -Force
+  }
+
+  ##########################################################
+  # ƒAƒbƒvƒ[ƒh—p‚ÌƒQƒXƒg”FØCredential‚ğ¶¬‚·‚é
+  ##########################################################
+  $StrSec = ConvertTo-SecureString $UploadPass -AsPlainText -Force
+  $Cred = New-Object System.Management.Automation.PsCredential($UploadUser, $StrSec)
+
+  ##########################################################
+  # PSƒhƒ‰ƒCƒu‚Éƒ}ƒEƒ“ƒg‚·‚é
+  ##########################################################
+  $psDriveName = "Z"
+  $psDriveInfo = Get-PSDrive | Where-Object {$_.Name -eq $psDriveName}
+  if ($nul -ne $psDriveInfo) {
+     Remove-PSDrive -Name $psDriveName
+  }
+  New-PSDrive -Name $psDriveName -PSProvider FileSystem -Root $SharedFolder -Credential $Cred
+
+  ##########################################################
+  # ƒAƒbƒvƒ[ƒh‚·‚é
+  ##########################################################
+  $UploadUri = Join-Path $SharedFolder $UploadDir
+  Robocopy $SourceFolder $UploadUri /DCOPY:DA /COPY:DAT /R:5 /W:30
+  $result = $LASTEXITCODE
+  Write-Output "Robocopy Result Code: $result"
+  if (8 -le $result) {
+    Write-Output "robocopy ‚ÅƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½B"
+    $ErrorFlg = 1
+  }
+
+  ##########################################################
+  # ¢‘ãŠÇ—
+  ##########################################################
+  $TargetDir = Get-ChildItem $sharedFolder -Recurse | Where-Object {($_.Mode -eq "d-----")} | Sort-Object CreationTime -Descending
+  for($cnt = $Generation; $cnt -lt $TargetDir.Count; $cnt++) {
+    Write-Output "Delete Backup Metadata File: $($TargetDir[$cnt].FullName)"
+    Remove-Item $TargetDir[$cnt].FullName -Recurse -Force
+  }
+
+  ##########################################################
+  # PSƒhƒ‰ƒCƒu‚ğƒAƒ“ƒ}ƒEƒ“ƒg‚·‚é
+  ##########################################################
+  Remove-PSDrive -Name $psDriveName -Force
+
+  #################################################
+  # ƒGƒ‰[ƒnƒ“ƒhƒŠƒ“ƒO
+  #################################################
+  if($ErrorFlg) {
+    Write-Error("SQL Server Metadata Maintanance Job Error")
+    exit 9
+  } else {
+    Write-Output("SQL Server Metadata Maintanance Job Completed")
+    exit 0
+  }
+} catch {
+    Write-Error("SQL Server Metadata Maintanance Job Excute Error")
+    Write-Error($_.Exception)
+    exit 99
 }
-
-for($cnt = $Generation; $cnt -lt $BCDMetadataList.Count; $cnt++) {
-  Write-Output "Delete Metadata File: $($BCDMetadataList[$cnt].Name)"
-  Remove-Item $BCDMetadataList[$cnt].FullName -Force
-}
-
-
-##########################################################
-# ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ç”¨ã®ã‚²ã‚¹ãƒˆèªè¨¼Credentialã‚’ç”Ÿæˆã™ã‚‹
-##########################################################
-$secStr = ConvertTo-SecureString $uploadPass -AsPlainText -Force
-$cred = New-Object System.Management.Automation.PsCredential($uploadUser, $secStr)
-
-##########################################################
-# PSãƒ‰ãƒ©ã‚¤ãƒ–ã«ãƒã‚¦ãƒ³ãƒˆã™ã‚‹
-##########################################################
-$psDriveName = "Z"
-if(Get-PSDrive | where {$_.Name -eq $psDriveName}) {
-   # ã‚¨ãƒ©ãƒ¼çµ‚äº†ãªã©ã§æ—¢ã«å­˜åœ¨ã™ã‚‹å ´åˆã¯ä¸€æ—¦ã‚¢ãƒ³ãƒã‚¦ãƒ³ãƒˆã™ã‚‹
-   Remove-PSDrive -Name $psDriveName
-}
-$uploadDrive = New-PSDrive -Name $psDriveName -PSProvider FileSystem -Root $uploadServer -Credential $cred
-
-##########################################################
-# ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã™ã‚‹
-##########################################################
-$uploadUri = Join-Path $uploadServer $uploadDir
-Robocopy $TargetFolder $uploadUri
-$TargetDir=Get-ChildItem $uploadServer -Recurse | Where-Object {($_.Mode -eq "d-----")} | Sort-Object CreationTime -Descending
-for($cnt = $Generation; $cnt -lt $TargetDir.Count; $cnt++) {
-  Write-Output "Delete Backup Metadata File: $($TargetDir[$cnt].FullName)"
-  Remove-Item $TargetDir[$cnt].FullName -Recurse -Force
-}
-
-##########################################################
-# PSãƒ‰ãƒ©ã‚¤ãƒ–ã‚’ã‚¢ãƒ³ãƒã‚¦ãƒ³ãƒˆã™ã‚‹
-##########################################################
-Remove-PSDrive -Name $psDriveName -Force
+exit 0

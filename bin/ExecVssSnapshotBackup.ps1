@@ -139,8 +139,8 @@ try {
   $BackupResult = $null
   $Timestamp = $(Get-Date -Format "yyyy/MM/dd-HH:mm:dd")
 
-  # $Log.Info("Send-SSMCommand -DocumentName AWSEC2-VssInstallAndSnapshot -InstanceId $($Instance.InstanceId) -Parameter @{'ExcludeBootVolume'='True';'SaveVssMetadata'='True';'description'='VssSnapshotBackup $Timestamp';'tags'='Key=BackupType,Value=SQLServerVSS'}")
-  $BackupResult = Send-SSMCommand -DocumentName AWSEC2-VssInstallAndSnapshot -InstanceId $($Instance.InstanceId) -Parameter @{'ExcludeBootVolume'='True';'SaveVssMetadata'='True';'description'="VssSnapshotBackup $Timestamp";'tags'='Key=BackupType,Value=SQLServerVSS'}
+  # $Log.Info("Send-SSMCommand -DocumentName AWSEC2-VssInstallAndSnapshot -InstanceId $($Instance.InstanceId) -Parameter @{'ExcludeBootVolume'='True';'SaveVssMetadata'='True';'description'='VssSnapshotBackup $Timestamp';'tags'='Key=Name,Value=SQLServer Snapshot Backup;Key=BackupType,Value=SQLServerVSS'}")
+  $BackupResult = Send-SSMCommand -DocumentName AWSEC2-VssInstallAndSnapshot -InstanceId $($Instance.InstanceId) -Parameter @{'ExcludeBootVolume'='True';'SaveVssMetadata'='True';'description'="VssSnapshotBackup $Timestamp";'tags'='Key=Name,Value=SQLServer Snapshot Backup;Key=BackupType,Value=SQLServerVSS'}
 
   if($BackupResult) {
     $Log.Info("CommandId: $($BackupResult.CommandId)")
@@ -170,8 +170,12 @@ try {
       $Log.Warn("Monitoring Timeout: $(Get-Date) (Localtime)")
       $ErrorFlg = $true
     }
-    $Log.Info("SSM Snapshot Backup:Finished")
+    $Log.Info("`n" + $((Get-SSMCommandInvocation -CommandId $BackupResult.CommandId -Detail $true).CommandPlugins.Output))
+  } else {
+    $Log.Error("SSM Snapshot Backup:Failed")
+    exit 9
   }
+  $Log.Info("SSM Snapshot Backup:Finished")
 
   #################################################
   # ê¢ë„ä«óù
@@ -199,7 +203,7 @@ try {
     Start-Sleep -Seconds $RetryInterval
     $JobState = (Get-SSMCommand -CommandId $BackupResult.CommandId).Status.Value
   } While(!(@("Cancelled", "Success", "Failed") -contains $JobState))
-  $Log.Info("`n"+$((Get-SSMCommandInvocation -CommandId $BackupResult.CommandId -Detail $true).CommandPlugins.Output))
+  $Log.Info("`n" + $((Get-SSMCommandInvocation -CommandId $BackupResult.CommandId -Detail $true).CommandPlugins.Output))
 
   $Log.Info("SSM Snapshot LotationÅFComplete")
   
