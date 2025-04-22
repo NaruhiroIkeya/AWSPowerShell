@@ -22,7 +22,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :::::::::::::::::::::::::::::
 SET __LOG_CYCLE__=7
 SET __APL_PS1__=EC2BootController.ps1
-SET __ERROR_CODE__=0
+SET __ERROR_CODE__=-1
 
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::
@@ -75,14 +75,14 @@ CD /d %~dp0
 ::      スクリプト本体実行      ::
 ::::::::::::::::::::::::::::::::::
 CALL :__ECHO__ 仮想マシン起動処理（%__PS_SCRIPT__%）を開始します。
-if "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
-    set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
+    SET EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
-if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
-    set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
+    SET EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-if "%__REGIONNAME__%" EQU "" (
+IF "%__REGIONNAME__%" EQU "" (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Boot -Stdout -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 ) else (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Boot -Stdout -RegionName %__REGIONNAME__% -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"

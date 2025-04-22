@@ -25,6 +25,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :::::::::::::::::::::::::::::
 SET __LOG_CYCLE__=7
 SET __EXPIRE_DAYS__=7
+SET __ERROR_CODE__-1
 
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::
@@ -45,7 +46,6 @@ IF %__ARGC__% equ 6 IF "VSS" neq "%6" (
   EXIT /B 1
 )
 
-
 SET __VMNAME__=%1
 SET __VAULTNAME__=%2
 SET /A __CYCLEDAYS__=%3
@@ -54,7 +54,6 @@ SET /A __COMPLETE_WINDOW__=%5
 IF "VSS" equ "%6" (
   SET __OSTYPE__="-Windows"
 )
-
 
 ::::::::::::::::::::::::::::::::::
 ::      タイムスタンプ生成      ::
@@ -90,11 +89,11 @@ CD /d %~dp0
 ::      スクリプト本体実行      ::
 ::::::::::::::::::::::::::::::::::
 CALL :__ECHO__ AWS Backup実行処理（%~n0.ps1）を開始します。
-if "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
-    set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
+    SET EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
-if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
-    set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
+    SET EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
 %EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__OSTYPE__% %__VMNAME__% %__VAULTNAME__% %__CYCLEDAYS__% %__START_WINDOW__% %__COMPLETE_WINDOW__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"

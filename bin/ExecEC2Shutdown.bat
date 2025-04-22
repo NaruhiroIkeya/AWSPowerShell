@@ -76,14 +76,14 @@ CD /d %~dp0
 ::      スクリプト本体実行      ::
 ::::::::::::::::::::::::::::::::::
 CALL :__ECHO__ 仮想マシン停止処理（%__PS_SCRIPT__%）を開始します。
-if "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
-    set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
+    SET EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
-if "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
-    set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
+IF "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
+    SET EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-if "%__REGIONNAME__%" EQU "" (
+IF "%__REGIONNAME__%" EQU "" (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Shutdown -Stdout -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 ) else (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Shutdown -Stdout -RegionName %__REGIONNAME__% -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
