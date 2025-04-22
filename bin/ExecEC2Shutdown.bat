@@ -85,7 +85,7 @@ IF "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
 
 IF "%__REGIONNAME__%" EQU "" (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Shutdown -Stdout -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
-) else (
+) ELSE (
   %EXEC_POWERSHELL% -NoProfile -inputformat none -command "%__PS_SCRIPT__% -Shutdown -Stdout -RegionName %__REGIONNAME__% -EC2Name %__EC2NAME__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
 )
 ::::::::::::::::::::::::::::::::::::::::::
