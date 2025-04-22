@@ -22,7 +22,6 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :::::::::::::::::::::::::::::
 SET __LOG_CYCLE__=7
 SET __ERROR_CODE__=-1
-
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::
 :::::::::::::::::::::::::::::::::::
@@ -38,6 +37,7 @@ IF %__ARGC__% leq 1 (
 
 SET __VMNAME__=%1
 SET __EXEC_SCRIPT__=%2
+SET __OS_TYPE__=%3
 
 ::::::::::::::::::::::::::::::::::
 ::      タイムスタンプ生成      ::
@@ -74,13 +74,20 @@ CD /d %~dp0
 ::::::::::::::::::::::::::::::::::
 CALL :__ECHO__ SSM RunCommand実行処理（%~n0.ps1）を開始します。
 IF "%PROCESSOR_ARCHITECTURE%" EQU "x86" (
-    SET EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
+    set EXEC_POWERSHELL="C:\Windows\sysnative\WindowsPowerShell\v1.0\powershell.exe"
 )
 IF "%PROCESSOR_ARCHITECTURE%" EQU "AMD64" (
-    SET EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
+    set EXEC_POWERSHELL="C:\Windows\system32\WindowsPowerShell\v1.0\powershell.exe"
 )
 
-%EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__EXEC_SCRIPT__%;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+IF "%__OS_TYPE__%" EQU "Windows" (
+    %EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__EXEC_SCRIPT__% -Windows;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+) ELSE IF "%__OS_TYPE__%" EQU "Linux" (
+    %EXEC_POWERSHELL% -ExecutionPolicy RemoteSigned -NoProfile -inputformat none -command "%~dpn0.ps1 -Stdout %__VMNAME__% %__EXEC_SCRIPT__% -Linux;exit $LASTEXITCODE" >>"%__LOGFILE__%"
+) ELSE (
+  CALL :__ECHO__ OS種別を指定してください。
+  EXIT /B %__ERROR_CODE__%  
+)
 
 ::::::::::::::::::::::::::::::::::::::::::
 ::      スクリプト本体実行結果確認      ::

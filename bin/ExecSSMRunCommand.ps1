@@ -25,6 +25,8 @@ param (
   [parameter(mandatory=$true)][string]$EC2Name,
   [parameter(mandatory=$true)][string]$ScriptFullPath,
   [string]$RegionName,
+  [switch]$Windows,
+  [switch]$Linux,
   [switch]$Eventlog=$false,
   [switch]$Stdout=$false
 )
@@ -76,6 +78,14 @@ if($Stdout -and $Eventlog) {
   $Log.Info("ログファイル名:$($Log.GetLogInfo())")
 }
 
+##########################
+# パラメータチェック
+##########################
+if(-not ($Windows -xor $Linux)) {
+  $Log.Error("-Windows / -Linux 何れかのオプションを設定してください。")
+  exit 9
+}
+
 try {
   ##########################
   # AWSログオン処理
@@ -118,7 +128,7 @@ try {
   ##############################
   # EC2のステータスチェック
   ##############################h
-  $Log.Info("SSM Snapshot Backup:Start")
+  $Log.Info("SSM RunCommand:Start")
   $Log.Info("$EC2Name のステータスを取得します。")
   $Log.Info("Instance Id [" + $Instance.InstanceId + "] ")
   $Log.Info("Instance Type [" + $Instance.InstanceType + "] ")
@@ -129,7 +139,11 @@ try {
   # RunCommand（シェルスクリプト実行）
   #################################################
   $Log.Info("Execute Script:$ScriptFullPath") 
-  $BackupResult = Send-SSMCommand -DocumentName AWS-RunPowerShellScript -InstanceId $($Instance.InstanceId) -Parameter @{'commands'="$ScriptFullPath";}
+  if ($Windows) {
+    $BackupResult = Send-SSMCommand -DocumentName AWS-RunPowerShellScript -InstanceId $($Instance.InstanceId) -Parameter @{'commands'="$ScriptFullPath";}
+  } elseif ($Linux) {
+    $BackupResult = Send-SSMCommand -DocumentName AWS-RunShellScript -InstanceId $($Instance.InstanceId) -Parameter @{'commands'="$ScriptFullPath";}
+  }
   do {
     Start-Sleep -Seconds $RetryInterval
     $JobState = (Get-SSMCommand -CommandId $BackupResult.CommandId).Status.Value
@@ -144,21 +158,21 @@ try {
   } else {
     $Log.Info("`n" + $JobOutput)
   }
-  $Log.Info("SSM Snapshot Lotation：Complete")
+  $Log.Info("SSM RunCommand：Complete")
   
 
   #################################################
   # エラーハンドリング
   #################################################
   if($ErrorFlg) {
-    $Log.Error("SSM Snapshot Backupジョブがエラー終了しました。")
+    $Log.Error(SSM RunCommandジョブがエラー終了しました。")
     exit 9
   } else {
-    $Log.Info("SSM Snapshot Backupジョブが完了しました。")
+    $Log.Info("SSM RunCommandジョブが完了しました。")
     exit 0
   }
 } catch {
-    $Log.Error("SSM Snapshot Backup実行中にエラーが発生しました。")
+    $Log.Error("SSM RunCommand実行中にエラーが発生しました。")
     $Log.Error($_.Exception)
     exit 99
 }

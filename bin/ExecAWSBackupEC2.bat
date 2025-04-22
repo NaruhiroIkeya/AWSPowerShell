@@ -25,7 +25,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :::::::::::::::::::::::::::::
 SET __LOG_CYCLE__=7
 SET __EXPIRE_DAYS__=7
-SET __ERROR_CODE__-1
+SET __ERROR_CODE__=-1
 
 :::::::::::::::::::::::::::::::::::
 ::      パラメータチェック       ::
